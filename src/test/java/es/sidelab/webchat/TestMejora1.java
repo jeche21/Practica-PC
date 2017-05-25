@@ -93,6 +93,7 @@ public class TestMejora1 {
 			chat.addUser(user);
 			//Muestro por pantalla todos los usuarios de ese chat
 			Collection<User> usuarios = chat.getUsers();
+			//Imprimimos los usuarios
 			for(User usuarioChat: usuarios){
 				String nombreUsuario = usuarioChat.getName();
 				System.out.println(nombreUsuario + " en Chat"+idChat);

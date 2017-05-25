@@ -3,6 +3,8 @@ package es.codeurjc.webchat;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
@@ -10,6 +12,7 @@ public class ChatManager {
 
 	private ConcurrentHashMap<String, Chat> chats = new ConcurrentHashMap<>();
 	private ConcurrentHashMap<String, User> users = new ConcurrentHashMap<>();
+	private ConcurrentHashMap<User, Executor> executorsUsers = new ConcurrentHashMap<>();
 	private int maxChats;
 
 	public ChatManager(int maxChats) {
@@ -23,6 +26,7 @@ public class ChatManager {
 					+ user.getName() + "\'");
 		} else {
 			users.putIfAbsent(user.getName(), user);
+			executorsUsers.putIfAbsent(user, Executors.newSingleThreadExecutor());
 		}
 	}
 
@@ -37,11 +41,14 @@ public class ChatManager {
 			return chats.get(name);
 		} else {
 			Chat newChat = new Chat(this, name);
-			if(chats.putIfAbsent(name, newChat) == null){
+			/*No se que hace esto(las lineas de cosdigo siguientes
+			 * solo he cambiado el put por putifAbsent
+			 * porque es del concurrentHasmap aunque el put
+			 * tambien lo es */
+			chats.putIfAbsent(name, newChat);
 			
-				for(User user : users.values()){
-					user.newChat(newChat);
-				}
+			for(User user : users.values()){
+				user.newChat(newChat);
 			}
 
 			return newChat;
@@ -74,6 +81,10 @@ public class ChatManager {
 
 	public User getUser(String userName) {
 		return users.get(userName);
+	}
+	
+	public Executor getExecutor(User usuario){
+		return executorsUsers.get(usuario);
 	}
 
 	public void close() {}
