@@ -41,28 +41,28 @@ public class Mejora4 {
 	public void testMejora4() throws Throwable {
 		
 		Callable <String> tarea = ()-> {
-			crearChat("user0");
+			crearChat("Jesus");
 			Thread.sleep(1000);
 			return null;
 		};
 		completionService.submit(tarea);
 		
 		Callable <String> tareaUser1 = ()-> {
-			restoUsuarios("user1");
+			restoUsuarios("César");
 			Thread.sleep(1000);
 			return null;
 		};
 		completionService2.submit(tareaUser1);
 		
 		Callable <String> tareaUser2 = ()-> {
-			restoUsuarios("user2");
+			restoUsuarios("Javi");
 			Thread.sleep(1000);
 			return null;
 		};
 		completionService3.submit(tareaUser2);
 		
 		Callable <String> tareaUser3 = ()-> {
-			restoUsuarios("user3");
+			restoUsuarios("Miguel");
 			Thread.sleep(1000);
 			return null;
 		};
@@ -86,16 +86,16 @@ public class Mejora4 {
 		}
 	}
 
-	public void crearChat(String stringhilo) throws InterruptedException,TimeoutException {
+	public void crearChat(String nombre) throws InterruptedException,TimeoutException {
 
-		TestUser user = new TestUser(stringhilo);
+		TestUser user = new TestUser(nombre);
 		chatManager.newUser(user);
 		chat = chatManager.newChat("Chat", 5, TimeUnit.SECONDS);
 		chat.addUser(user);
 		semaforo.release();
 		latchUser.await();		
 		
-		chat.sendMessage(user, "¿COMO ESTAS?");		
+		chat.sendMessage(user, "Hola,¿Que tal estais?");		
 	}
 	
 	public void restoUsuarios(String usuario) throws InterruptedException,TimeoutException {
