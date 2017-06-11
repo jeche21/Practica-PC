@@ -2,6 +2,8 @@ package es.codeurjc.webchat;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -20,6 +22,8 @@ public class ChatManager {
 	private ConcurrentHashMap<User,ExecutorService> tareas= new ConcurrentHashMap<>();
 
 	private int maxChats;
+	//Mejora_func1
+	private BlockingQueue<Integer> colaChats = new ArrayBlockingQueue<>(50);//hacemos una blocking queue de 50 chat como maximo.
 
 	public ChatManager(int maxChats) {
 		this.maxChats = maxChats;
@@ -46,7 +50,8 @@ public class ChatManager {
 			TimeoutException {
 		//esto tenemos que cambiarlo y bloquear hasta que haya hueco para meter un chat
 		if (chats.size() == maxChats) {
-			throw new TimeoutException("There is no enought capacity to create a new chat");
+			//tenemos que recoger el resultado de offer o automaticamente lo imprime por pantalla el solo??
+			colaChats.offer(colaChats.size()+1);//metemos un chat mas en la cola.
 		}
 
 		if(chats.containsKey(name)){
@@ -70,6 +75,15 @@ public class ChatManager {
 
 	public void closeChat(Chat chat) {
 		Chat removedChat = chats.remove(chat.getName());
+		
+		if (colaChats.size()>0){
+			try {
+				colaChats.take();
+			} catch (InterruptedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
 		if (removedChat == null) {
 			throw new IllegalArgumentException("Trying to remove an unknown chat with name \'"
 					+ chat.getName() + "\'");
