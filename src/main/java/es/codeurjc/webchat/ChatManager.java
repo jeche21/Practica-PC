@@ -52,6 +52,7 @@ public class ChatManager {
 		if (chats.size() == maxChats) {
 			//tenemos que recoger el resultado de offer o automaticamente lo imprime por pantalla el solo??
 			colaChats.offer(colaChats.size()+1);//metemos un chat mas en la cola.
+			
 		}
 
 		if(chats.containsKey(name)){
