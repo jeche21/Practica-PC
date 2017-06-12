@@ -7,8 +7,11 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+
+import org.apache.tomcat.util.collections.SynchronizedQueue;
 
 public class ChatManager {
 
@@ -20,13 +23,15 @@ public class ChatManager {
 	/*nos creamos esta estructura para poder pedir a la clase user un determinado executor de un usuario en concreto para poder mandar mensajes en paralelo evitando que
 	un usuario con mala conexion haga que los demas tambien vayan lentos. De esta manera si tienes buena conexion no habra problema.*/
 	private ConcurrentHashMap<User,ExecutorService> tareas= new ConcurrentHashMap<>();
+	Semaphore semaforo = new Semaphore(1);
 
 	private int maxChats;
 	//Mejora_func1
-	private BlockingQueue<Integer> colaChats = new ArrayBlockingQueue<>(50);//hacemos una blocking queue de 50 chat como maximo.
+	private BlockingQueue<String> colaChats;//hacemos una blocking queue de 50 chat como maximo.
 
 	public ChatManager(int maxChats) {
 		this.maxChats = maxChats;
+		this.colaChats = new ArrayBlockingQueue<>(maxChats);
 	}
 
 	public void newUser(User user) {
@@ -51,7 +56,10 @@ public class ChatManager {
 		//esto tenemos que cambiarlo y bloquear hasta que haya hueco para meter un chat
 		if (chats.size() == maxChats) {
 			//tenemos que recoger el resultado de offer o automaticamente lo imprime por pantalla el solo??
-			colaChats.offer(colaChats.size()+1);//metemos un chat mas en la cola.
+				boolean conseguido = colaChats.offer(name, timeout, unit);//metemos un chat mas en la cola.
+				if(!conseguido){
+					throw new TimeoutException("There is no enought capacity to create a new chat");
+			}
 			
 		}
 
@@ -59,10 +67,10 @@ public class ChatManager {
 			//si existe no crea otro sino que te lo devuelve el que ya existe
 			return chats.get(name);
 		} else {
+			colaChats.offer(name);
 			Chat newChat = new Chat(this, name);
 			//chats.put(name, newChat);
 			if((chats.putIfAbsent(name, newChat)) == null){
-				
 				for(User user : users.values()){
 					//user.newChat(newChat);
 					//avisamos de manera paralela a todos los usuarios de que se ha creado un nuevo chat
@@ -78,12 +86,7 @@ public class ChatManager {
 		Chat removedChat = chats.remove(chat.getName());
 		
 		if (colaChats.size()>0){
-			try {
-				colaChats.take();
-			} catch (InterruptedException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
+			colaChats.remove(chat.getName());
 		}
 		if (removedChat == null) {
 			throw new IllegalArgumentException("Trying to remove an unknown chat with name \'"
