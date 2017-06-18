@@ -25,7 +25,7 @@ public class ChatManager {
 	un usuario con mala conexion haga que los demas tambien vayan lentos. De esta manera si tienes buena conexion no habra problema.*/
 	private ConcurrentHashMap<User,ExecutorService> tareas= new ConcurrentHashMap<>();
 	Semaphore semaforo = new Semaphore(1);
-	Executor numChats = (Executor) Executors.newScheduledThreadPool(1).scheduleAtFixedRate(null, 3, 3, TimeUnit.SECONDS);
+	Executor numChats = Executors.newSingleThreadExecutor();
 	Executor numUser = Executors.newSingleThreadExecutor();
 	Executor numMedUsuer =  Executors.newSingleThreadExecutor();
 	Executor chatMaxUser = Executors.newSingleThreadExecutor();

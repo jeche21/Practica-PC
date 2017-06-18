@@ -41,8 +41,8 @@ public class Mejora_func_1_2 {
 		Future<?> f2 = executor.submit(() -> {
 				try {
 					esperar.await();
-					Chat chat = chatManager.newChat("Chat1" , 5, TimeUnit.SECONDS);
-					assertTrue(chatManager.getChat(chat.getName()) == chat);
+					Chat chat2 = chatManager.newChat("Chat2" , 5, TimeUnit.SECONDS);
+					assertTrue(chatManager.getChat(chat2.getName()) == chat2);
 				} catch (InterruptedException | TimeoutException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
