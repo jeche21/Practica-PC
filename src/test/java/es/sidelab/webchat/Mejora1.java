@@ -2,6 +2,7 @@ package es.sidelab.webchat;
 
 
 
+import java.util.Collection;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -11,6 +12,7 @@ import org.junit.Test;
 
 import es.codeurjc.webchat.Chat;
 import es.codeurjc.webchat.ChatManager;
+import es.codeurjc.webchat.User;
 
 public class Mejora1 {
 	
@@ -112,6 +114,10 @@ public class Mejora1 {
 		for (int j = 0; j<5; j++ ){
 			Chat chat = chatManager.newChat("Chat"+j, 5, TimeUnit.SECONDS);
 			chat.addUser(user);
+			Collection<User> usuarios = chat.getUsers();
+			   for(User user1: usuarios){
+				   System.out.println(user1.getName() + " in " + chat.getName());
+			   }
 			
 		}
 		
