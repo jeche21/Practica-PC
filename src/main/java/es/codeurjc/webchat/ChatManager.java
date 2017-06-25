@@ -5,14 +5,17 @@ import java.util.Collections;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import org.apache.tomcat.util.collections.SynchronizedQueue;
+import org.springframework.scheduling.concurrent.ScheduledExecutorTask;
 
 public class ChatManager {
 
@@ -24,12 +27,13 @@ public class ChatManager {
 	/*nos creamos esta estructura para poder pedir a la clase user un determinado executor de un usuario en concreto para poder mandar mensajes en paralelo evitando que
 	un usuario con mala conexion haga que los demas tambien vayan lentos. De esta manera si tienes buena conexion no habra problema.*/
 	private ConcurrentHashMap<User,ExecutorService> tareas= new ConcurrentHashMap<>();
-	Semaphore semaforo = new Semaphore(1);
-	Executor numChats = Executors.newSingleThreadExecutor();
-	Executor numUser = Executors.newSingleThreadExecutor();
-	Executor numMedUsuer =  Executors.newSingleThreadExecutor();
-	Executor chatMaxUser = Executors.newSingleThreadExecutor();
-	Executor chatMinUser = Executors.newSingleThreadExecutor();
+	Semaphore semaforoNewUser = new Semaphore(1);
+	Semaphore semaforeNewChat = new Semaphore(1);
+	ExecutorService numChats;
+	ExecutorService numUser;
+	ExecutorService numMedUsuer;
+	ExecutorService chatMaxUser;
+	ExecutorService chatMinUser;
 	
 
 	private int maxChats;
@@ -43,64 +47,82 @@ public class ChatManager {
 	}
 	
 	public void  estadisticas(){
+		
+		Executors.newScheduledThreadPool(1).scheduleAtFixedRate(new Runnable(){
+			public void run(){
+				CountDownLatch esperarEstadisticas = new CountDownLatch(5);
+				try {
+					semaforeNewChat.acquire();
+					semaforoNewUser.acquire();
+				} catch (InterruptedException e1) {
+					// TODO Auto-generated catch block
+					e1.printStackTrace();
+				}
+				
+				Runnable numeroChats = () ->{
+					System.out.println("El numero de chats es: " + chats.size());
+					esperarEstadisticas.countDown();
+				};
+				numChats.execute(numeroChats);
+				Runnable numeroUsuarios = () -> {
+					int usuariosTotalesEnChats = numeroUsuariosTotales();
+					System.out.println("El numero de usuarios activos son: " + usuariosTotalesEnChats);
+					esperarEstadisticas.countDown();
+				};
+				numUser.execute(numeroUsuarios);
+				Runnable mediaUser = () -> {
+					float mediaUsuariosChats = numeroUsuariosTotales() / (chats.size());
+					System.out.println("La media de usuarios por chat es de: " + mediaUsuariosChats);
+					esperarEstadisticas.countDown();
+				};
+				numMedUsuer.execute(mediaUser);
+				Runnable maximoUserChats = () -> {
+					int max = 0;
+					Chat chatMayor = null;
+					for(Chat chat : getChats()){
+						if(chat.getUsers().size() >= max){
+							max = chat.getUsers().size();
+							chatMayor = chat;
+						}
+					}
+					System.out.println("El chat que mas usuarios tiene es: " + chatMayor.getName());
+					esperarEstadisticas.countDown();
+				};
+				chatMaxUser.execute(maximoUserChats);
+				Runnable minimoUserChats = () -> {
+					int min = 0;
+					Chat chatMenor = null;
+					for(Chat chat : getChats()){
+						if(chat.getUsers().size() <= min){
+							min = chat.getUsers().size();
+							chatMenor = chat;
+						}
+					}
+					System.out.println("El chat que menos usuarios tiene es: " + chatMenor.getName());
+					esperarEstadisticas.countDown();
+				};
+				chatMinUser.execute(minimoUserChats);
+				try {
+					esperarEstadisticas.await();
+					semaforeNewChat.release();
+					semaforoNewUser.release();
+				} catch (InterruptedException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			}
+		}, 3, 3, TimeUnit.SECONDS);
+	}
+
+	public void newUser(User user) {
 		try {
-			Thread.sleep(3000);
+			semaforoNewUser.acquire();
 		} catch (InterruptedException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		while(true){
-			Runnable numeroChats = () ->{
-				System.out.println("El numero de chats es: " + chats.size());
-			};
-			numChats.execute(numeroChats);
-			Runnable numeroUsuarios = () -> {
-				int usuariosTotalesEnChats = this.numeroUsuariosTotales();
-				System.out.println("El numero de usuarios activos son: " + usuariosTotalesEnChats);
-			};
-			numUser.execute(numeroUsuarios);
-			Runnable mediaUser = () -> {
-				float mediaUsuariosChats = this.numeroUsuariosTotales() / (chats.size());
-				System.out.println("La media de usuarios por chat es de: " + mediaUsuariosChats);
-			};
-			numMedUsuer.execute(mediaUser);
-			Runnable maximoUserChats = () -> {
-				int max = 0;
-				Chat chatMayor = null;
-				for(Chat chat : this.getChats()){
-					if(chat.getUsers().size() >= max){
-						max = chat.getUsers().size();
-						chatMayor = chat;
-					}
-				}
-				System.out.println("El chat que mas usuarios tiene es: " + chatMayor.getName());
-			};
-			chatMaxUser.execute(maximoUserChats);
-			Runnable minimoUserChats = () -> {
-				int min = 0;
-				Chat chatMenor = null;
-				for(Chat chat : this.getChats()){
-					if(chat.getUsers().size() <= min){
-						min = chat.getUsers().size();
-						chatMenor = chat;
-					}
-				}
-				System.out.println("El chat que menos usuarios tiene es: " + chatMenor.getName());
-			};
-			chatMinUser.execute(minimoUserChats);
-			
-			try {
-				Thread.sleep(3000);
-			} catch (InterruptedException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-		}
-	}
-
-	public void newUser(User user) {
-			
 		if(users.containsKey(user.getName())){
+			semaforoNewUser.release();
 			throw new IllegalArgumentException("There is already a user with name \'"
 					+ user.getName() + "\'");
 		} else {
@@ -110,7 +132,8 @@ public class ChatManager {
 			//mejora3 y mejora1
 			if(users.putIfAbsent(user.getName(), user) == null){
 				tareas.putIfAbsent(user, Executors.newSingleThreadExecutor());
-			}		
+			}
+			semaforoNewUser.release();
 		}
 	}
 
@@ -130,6 +153,7 @@ public class ChatManager {
 			//si existe no crea otro sino que te lo devuelve el que ya existe
 			return chats.get(name);
 		} else {
+			semaforeNewChat.acquire();
 			colaChats.offer(name);
 			Chat newChat = new Chat(this, name);
 			//chats.put(name, newChat);
@@ -140,7 +164,7 @@ public class ChatManager {
 					this.getExecutor(user).execute(()->{user.newChat(newChat);});			
 				}
 			}
-			
+			semaforeNewChat.release();
 			return newChat;
 		}
 	}
