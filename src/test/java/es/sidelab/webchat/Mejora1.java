@@ -1,10 +1,13 @@
 package es.sidelab.webchat;
 
-
-
 import java.util.Collection;
+import java.util.ConcurrentModificationException;
+import java.util.concurrent.Callable;
+import java.util.concurrent.CompletionService;
+import java.util.concurrent.ExecutorCompletionService;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
@@ -18,93 +21,30 @@ public class Mejora1 {
 	
 	ChatManager chatManager = new ChatManager(50);
 	
-	ExecutorService executor = Executors.newSingleThreadExecutor();
-	ExecutorService executor2 = Executors.newSingleThreadExecutor();
-	ExecutorService executor3 = Executors.newSingleThreadExecutor();
-	ExecutorService executor4 = Executors.newSingleThreadExecutor();
+	ExecutorService executor = Executors.newFixedThreadPool(4);
+	CompletionService<String> completionService = new ExecutorCompletionService<>(executor);
 	
 	@Test
 	public void newUserInChat() throws Throwable {
 		
-		Runnable tarea = ()-> {
-			try {
-				mejoras("user0");
-			} catch (InterruptedException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			} catch (TimeoutException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-			try {
-				Thread.sleep(1000);
-			} catch (InterruptedException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-
-		};
-		executor.execute(tarea);
+		for(int i = 0; i < 4; i++){
+			int id = i;
+			Callable<String> tarea = () -> {
+				mejoras("User" + id);
+				return null;
+			};
+			completionService.submit(tarea);
+		}
 		
-		Runnable tareaUser1 = ()-> {
-			
-			try {
-				mejoras("user1");
-			} catch (InterruptedException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			} catch (TimeoutException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
+		for(int i = 0; i < 4; i++){
+			try{
+				Future<String> f = completionService.take();
+				f.get();
 			}
-			try {
-				Thread.sleep(1000);
-			} catch (InterruptedException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
+			catch (InterruptedException | ConcurrentModificationException e){
+				e.getCause();
 			}
-		};
-		executor2.execute(tareaUser1);
-		
-		Runnable tareaUser2 = ()-> {
-			
-			try {
-				mejoras("user2");
-			} catch (InterruptedException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			} catch (TimeoutException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-			try {
-				Thread.sleep(1000);
-			} catch (InterruptedException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-		};
-		executor3.execute(tareaUser2);
-		
-		Runnable tareaUser3 = ()-> {
-			
-			try {
-				mejoras("user3");
-			} catch (InterruptedException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			} catch (TimeoutException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-			try {
-				Thread.sleep(1000);
-			} catch (InterruptedException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-		};
-		executor4.execute(tareaUser3);
+		}
 		
 	}
 	
@@ -118,9 +58,7 @@ public class Mejora1 {
 			   for(User user1: usuarios){
 				   System.out.println(user1.getName() + " in " + chat.getName());
 			   }
-			
-		}
-		
-		
+		}	
 	}	
 }
+
