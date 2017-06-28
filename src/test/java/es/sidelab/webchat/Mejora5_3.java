@@ -41,6 +41,7 @@ import java.util.concurrent.TimeUnit;
 				latch1.countDown();
 				
 				String dentro = estoy_dentro.exchange(null);
+				System.out.println("El usuario "+dentro+ " se ha unido al chat");
 				assertTrue(chat.getUser(dentro)!=null);
 				return null;
 			};

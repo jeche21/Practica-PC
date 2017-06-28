@@ -18,7 +18,6 @@ import es.codeurjc.webchat.ChatManager;
 import es.codeurjc.webchat.User;
 
 public class Mejora1 {
-	//no entiendo por que pone por pantalla new user user0 in chat4??
 	
 	ChatManager chatManager = new ChatManager(50);
 	

@@ -35,17 +35,20 @@ public class Mejora5_2 {
 			
 			chatManager.newUser(new TestUser("Cesar") {
 				@Override
-				public void chatClosed(Chat chat) {
+				public void newChat(Chat chat) {
 					chatName[0] = chat.getName();
 				}
 			});
 			
-			Chat chat = chatManager.newChat("Chat", 5, TimeUnit.SECONDS);
+			Chat chat = chatManager.newChat("Chat Amigos", 5, TimeUnit.SECONDS);
+			Thread.sleep(1500);
+			System.out.println("Se ha creado el chat con el nombre "+chatName[0]);
+			Thread.sleep(1000);
 			chatManager.closeChat(chat);
+			System.out.println("El chat con nombre "+chat.getName()+" se ha eliminado");
 			
 			
-			assertTrue("No se ha cerrado el chat"
-					+ chatName[0], Objects.equals(chatManager.getChat(chatName[0]),null));
+			assertTrue("No se ha cerrado el chat"+chatName[0], Objects.equals(chatManager.getChat(chatName[0]),null));
 			
 			return null;
 		};

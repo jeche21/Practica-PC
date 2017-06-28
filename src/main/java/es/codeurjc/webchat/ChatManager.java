@@ -6,23 +6,17 @@ import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-import org.apache.tomcat.util.collections.SynchronizedQueue;
-import org.springframework.scheduling.concurrent.ScheduledExecutorTask;
-
 public class ChatManager {
-	//en la mejora 3 donde verificamos que los mensajes llegan en orden??
 
+	//mejora2
 	//private Map<String, Chat> chats = new HashMap<>();
 	//private Map<String, User> users = new HashMap<>();
-	//mejora2
 	private ConcurrentHashMap<String, Chat> chats = new ConcurrentHashMap<>();
 	private ConcurrentHashMap<String, User> users = new ConcurrentHashMap<>();
 	/*nos creamos esta estructura para poder pedir a la clase user un determinado executor de un usuario en concreto para poder mandar mensajes en paralelo evitando que
@@ -30,6 +24,7 @@ public class ChatManager {
 	private ConcurrentHashMap<User,ExecutorService> tareas= new ConcurrentHashMap<>();
 	Semaphore semaforoNewUser = new Semaphore(1);
 	Semaphore semaforeNewChat = new Semaphore(1);
+	Semaphore semaforoCloseChat = new Semaphore(1);
 	ExecutorService numChats;
 	ExecutorService numUser;
 	ExecutorService numMedUsuer;
@@ -39,7 +34,7 @@ public class ChatManager {
 
 	private int maxChats;
 	//Mejora_func1
-	private BlockingQueue<String> colaChats;//hacemos una blocking queue de 50 chat como maximo.
+	private BlockingQueue<String> colaChats;//hacemos una blocking queue
 	
 
 	public ChatManager(int maxChats) {
@@ -55,6 +50,7 @@ public class ChatManager {
 				try {
 					semaforeNewChat.acquire();
 					semaforoNewUser.acquire();
+					semaforoCloseChat.acquire();
 				} catch (InterruptedException e1) {
 					// TODO Auto-generated catch block
 					e1.printStackTrace();
@@ -107,6 +103,7 @@ public class ChatManager {
 					esperarEstadisticas.await();//con este countDownLach nos aseguramos que ya han acabado de calcularse todas las estadisticas y se pueden soltar los semaforos. De la otra manera no sabriamos si todavia queda alguno calculandose
 					semaforeNewChat.release();
 					semaforoNewUser.release();
+					semaforoCloseChat.release();
 				} catch (InterruptedException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
@@ -171,8 +168,10 @@ public class ChatManager {
 		}
 	}
 
-	public void closeChat(Chat chat) {
+	public void closeChat(Chat chat) throws InterruptedException {
+		semaforoCloseChat.acquire();
 		Chat removedChat = chats.remove(chat.getName());
+		semaforoCloseChat.release();
 		
 		if (colaChats.size()>0){
 			colaChats.remove(chat.getName());
@@ -183,7 +182,8 @@ public class ChatManager {
 		}
 
 		for(User user : users.values()){
-			user.chatClosed(removedChat);
+			//user.chatClosed(removedChat);
+			this.getExecutor(user).execute(()->{user.chatClosed(removedChat);});
 		}
 	}
 
@@ -210,7 +210,6 @@ public class ChatManager {
 
 	public void close() {}
 	
-	//contamos el numero de usuarios totales que hay en un chat. PARA QUE SE UTILIZA???
 	public int numeroUsuariosTotales(){
 		int contadorUser = 0;
 		for(Chat chat :this.getChats()){

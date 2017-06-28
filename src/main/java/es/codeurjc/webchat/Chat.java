@@ -64,6 +64,11 @@ public class Chat {
 	}
 
 	public void close() {
-		this.chatManager.closeChat(this);
+		try {
+			this.chatManager.closeChat(this);
+		} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
 }

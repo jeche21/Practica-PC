@@ -28,11 +28,9 @@ public class Mejora5_1 {
 			
 			ChatManager chatManager = new ChatManager(5);
 			
-			
 			final String[] chatName = new String[1];
-	
-			
-			chatManager.newUser(new TestUser("Cesar") {
+
+			chatManager.newUser(new TestUser("user") {
 				@Override
 				public void newChat(Chat chat) {
 					chatName[0] = chat.getName();
@@ -40,11 +38,10 @@ public class Mejora5_1 {
 			});
 			
 			chatManager.newChat("Chat", 5, TimeUnit.SECONDS);
+			Thread.sleep(1000);//ponemos este sleep para que de tiempo a que el chat se cree
+			System.out.println("Se ha creado el chat llamado "+chatName[0]);
 			
-			
-			
-			assertTrue("No se ha creado chat"
-					+ chatName[0], Objects.equals(chatName[0], "Chat"));
+			assertTrue("No se ha creado el nuevo chat"+ chatName[0], Objects.equals(chatName[0], "Chat"));
 			
 			return null;
 		};

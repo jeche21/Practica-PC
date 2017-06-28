@@ -42,7 +42,8 @@ public class Mejora_func_1_2 {
 				try {
 					esperar.await();
 					Chat chat2 = chatManager.newChat("Chat2" , 5, TimeUnit.SECONDS);
-					assertTrue(chatManager.getChat(chat2.getName()) == chat2);
+					System.out.println("El chat actual se llama "+chatManager.getChat(chat2.getName()).getName());
+					assertTrue(chatManager.getChat(chat2.getName()).getName() == "Chat2");
 				} catch (InterruptedException | TimeoutException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();

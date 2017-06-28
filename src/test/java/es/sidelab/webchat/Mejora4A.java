@@ -9,9 +9,10 @@ import java.util.concurrent.ExecutorCompletionService;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 import org.junit.Test;
 
@@ -20,7 +21,9 @@ import es.codeurjc.webchat.ChatManager;
 
 public class Mejora4A {
 	static CountDownLatch latchUser = new CountDownLatch(3);
-	static Semaphore semaforo = new Semaphore (0);
+	static CountDownLatch actuacionRestoUsuarios = new CountDownLatch(1);
+	static Lock cerrojo = new ReentrantLock();
+	
 
 	static ChatManager chatManager = new ChatManager(5);
 	static Chat chat;
@@ -92,19 +95,22 @@ public class Mejora4A {
 		chatManager.newUser(user);
 		chat = chatManager.newChat("Chat", 5, TimeUnit.SECONDS);
 		chat.addUser(user);
-		semaforo.release();
+		actuacionRestoUsuarios.countDown();
 		latchUser.await();		
 		
 		chat.sendMessage(user, "Hola,¿Que tal estais?");		
 	}
 	
 	public void restoUsuarios(String usuario) throws InterruptedException,TimeoutException {
-		semaforo.acquire();
+		
+		actuacionRestoUsuarios.await();
+		cerrojo.lock();
 		TestUser user = new TestUser(usuario);
 		chatManager.newUser(user);
 		chat.addUser(user);
-
+		actuacionRestoUsuarios.countDown();
 		latchUser.countDown();
+		cerrojo.unlock();
 
 	}
 }
