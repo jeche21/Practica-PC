@@ -18,10 +18,11 @@ import org.apache.tomcat.util.collections.SynchronizedQueue;
 import org.springframework.scheduling.concurrent.ScheduledExecutorTask;
 
 public class ChatManager {
+	//en la mejora 3 donde verificamos que los mensajes llegan en orden??
 
 	//private Map<String, Chat> chats = new HashMap<>();
 	//private Map<String, User> users = new HashMap<>();
-	//mejora1
+	//mejora2
 	private ConcurrentHashMap<String, Chat> chats = new ConcurrentHashMap<>();
 	private ConcurrentHashMap<String, User> users = new ConcurrentHashMap<>();
 	/*nos creamos esta estructura para poder pedir a la clase user un determinado executor de un usuario en concreto para poder mandar mensajes en paralelo evitando que
@@ -103,7 +104,7 @@ public class ChatManager {
 				};
 				chatMinUser.execute(minimoUserChats);
 				try {
-					esperarEstadisticas.await();
+					esperarEstadisticas.await();//con este countDownLach nos aseguramos que ya han acabado de calcularse todas las estadisticas y se pueden soltar los semaforos. De la otra manera no sabriamos si todavia queda alguno calculandose
 					semaforeNewChat.release();
 					semaforoNewUser.release();
 				} catch (InterruptedException e) {
@@ -129,8 +130,9 @@ public class ChatManager {
 			//users.put(user.getName(), user);
 			//users.putIfAbsent(user.getName(), user);
 			//si se cumple la condicion del if quiere decir que no hay ningun usuario con ese nombre entonces insertamos en el hash map de las tareas el usuario y creamos un executor para que pueda realizar tareas en paralelo cuando le manden.
-			//mejora3 y mejora1
+			//mejora2
 			if(users.putIfAbsent(user.getName(), user) == null){
+				//mejora3
 				tareas.putIfAbsent(user, Executors.newSingleThreadExecutor());
 			}
 			semaforoNewUser.release();
@@ -156,10 +158,10 @@ public class ChatManager {
 			semaforeNewChat.acquire();
 			colaChats.offer(name);
 			Chat newChat = new Chat(this, name);
-			//chats.put(name, newChat);
+			//mejora2
 			if((chats.putIfAbsent(name, newChat)) == null){
 				for(User user : users.values()){
-					//user.newChat(newChat);
+					//mejora3
 					//avisamos de manera paralela a todos los usuarios de que se ha creado un nuevo chat
 					this.getExecutor(user).execute(()->{user.newChat(newChat);});			
 				}
@@ -200,15 +202,15 @@ public class ChatManager {
 	public User getUser(String userName) {
 		return users.get(userName);
 	}
-	//NO ENTIENDO MUY BIEN QUE SE DEVUELVA EL NOMBRE
-	//devolvemos el executor de el usuario para que podamos asignarle una tarea a realizar
 	//mejora3
+	//devolvemos el executor de el usuario para que podamos asignarle una tarea a realizar
 	public ExecutorService getExecutor(User name){
 		return tareas.get(name);
 	}
 
 	public void close() {}
 	
+	//contamos el numero de usuarios totales que hay en un chat. PARA QUE SE UTILIZA???
 	public int numeroUsuariosTotales(){
 		int contadorUser = 0;
 		for(Chat chat :this.getChats()){

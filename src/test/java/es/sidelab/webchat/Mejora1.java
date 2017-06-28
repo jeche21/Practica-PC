@@ -18,6 +18,7 @@ import es.codeurjc.webchat.ChatManager;
 import es.codeurjc.webchat.User;
 
 public class Mejora1 {
+	//no entiendo por que pone por pantalla new user user0 in chat4??
 	
 	ChatManager chatManager = new ChatManager(50);
 	
@@ -54,7 +55,7 @@ public class Mejora1 {
 		for (int j = 0; j<5; j++ ){
 			Chat chat = chatManager.newChat("Chat"+j, 5, TimeUnit.SECONDS);
 			chat.addUser(user);
-			Collection<User> usuarios = chat.getUsers();
+			Collection<User> usuarios = chat.getUsers();//mostramos los usuarios que hay en el chat por pantalla.
 			   for(User user1: usuarios){
 				   System.out.println(user1.getName() + " in " + chat.getName());
 			   }
